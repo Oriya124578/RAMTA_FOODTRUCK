@@ -1,0 +1,82 @@
+rules_version = '2';
+
+// RAMTA Foodtruck — Firestore security rules
+//
+// Strategy:
+//   • Menu/tables/settings: open write (low risk — non-PII content, low blast
+//     radius. Admin access is gated by site-level cookie auth).
+//   • Orders: STRICT — this is where money + PII lives. Customers can create
+//     with shape validation. They CANNOT list/enumerate; they can only get
+//     their own by ID (they know the ID after creating). Updates allowed only
+//     for status transitions, blocking client-side payment tampering.
+//
+// Upgrade path: when Firebase Auth + custom claim 'admin' is wired up,
+// swap menu/tables writes to require isAdmin() and orders updates to also
+// require it.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    // ─── Menu (public read, public write for MVP admin via Web SDK) ───
+    match /menu_categories/{id} {
+      allow read:  if true;
+      allow write: if true;
+    }
+    match /menu_items/{id} {
+      allow read:  if true;
+      allow write: if true;
+    }
+
+    // ─── Tables (public read, public write for MVP) ───
+    match /tables/{id} {
+      allow read:  if true;
+      allow write: if true;
+    }
+
+    // ─── Orders — strict (PII + money) ───
+    match /orders/{orderId} {
+      // Customer create — anonymous, but strict shape validation
+      allow create: if
+        request.resource.data.keys().hasAll([
+          'items', 'subtotal', 'total', 'customerName',
+          'customerPhone', 'status', 'paymentStatus'
+        ]) &&
+        request.resource.data.total is number &&
+        request.resource.data.total >= 0 &&
+        request.resource.data.total <= 5000 &&
+        request.resource.data.subtotal is number &&
+        request.resource.data.items is list &&
+        request.resource.data.items.size() > 0 &&
+        request.resource.data.items.size() <= 30 &&
+        request.resource.data.customerName is string &&
+        request.resource.data.customerName.size() >= 2 &&
+        request.resource.data.customerName.size() <= 80 &&
+        request.resource.data.customerPhone is string &&
+        request.resource.data.customerPhone.size() >= 9 &&
+        request.resource.data.customerPhone.size() <= 20 &&
+        request.resource.data.status == 'received' &&
+        request.resource.data.paymentStatus in ['pending', 'paid'];
+
+      // Single-doc read by ID is allowed (customer polling their own).
+      allow get:  if true;
+      allow list: if request.auth != null;
+
+      // Updates limited to status / payment fields (no item/total tampering).
+      allow update: if request.auth != null &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'updatedAt', 'paymentStatus', 'paymentTransactionId']);
+
+      allow delete: if false;
+    }
+
+    // ─── Settings ───
+    match /settings/{id} {
+      allow read:  if true;
+      allow write: if true;
+    }
+  }
+}

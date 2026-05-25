@@ -1,45 +1,246 @@
 @import "tailwindcss";
 
+/* ───────────────────────────────────────────────
+   RAMTA — Smoked Luxe Design Tokens
+   Black charcoal + warm browns + smoked gold.
+   Existing component class names map to new values.
+   ─────────────────────────────────────────────── */
 @theme {
-  --color-ramta-dark: #121212;
-  --color-ramta-darker: #0a0a0a;
-  --color-ramta-wood: #c19a6b;
-  --color-ramta-gold: #d4af37;
-  --color-ramta-text: #f5f5f5;
-  --color-ramta-muted: #a3a3a3;
-  --color-ramta-border: #262626;
-  --color-ramta-accent: #8b4513;
-  --font-heebo: var(--font-heebo), sans-serif;
+  /* Surfaces — deep black with a warm undertone */
+  --color-ramta-dark:    #0F0B09;  /* base canvas */
+  --color-ramta-darker:  #080605;  /* deeper surface */
+  --color-ramta-ink:     #0A0807;  /* deepest */
+  --color-ramta-char:    #14100D;  /* card / elevated */
+  --color-ramta-ember:   #1F1813;  /* subtle elevated */
+
+  /* Warm browns + gold — premium, not bright */
+  --color-ramta-wood:    #B07A4A;  /* primary bronze (was: light camel) */
+  --color-ramta-bronze:  #8B5A2B;
+  --color-ramta-copper:  #B87333;
+  --color-ramta-gold:    #C9A961;  /* smoked gold (was: yellow gold) */
+  --color-ramta-accent:  #8B4513;
+
+  /* Text */
+  --color-ramta-text:    #F5EBDC;  /* warm bone */
+  --color-ramta-muted:   #8B7E72;  /* warm ash */
+  --color-ramta-border:  #2A211B;  /* warm border */
+
+  /* Fonts */
+  --font-heebo:      var(--font-heebo), system-ui, sans-serif;
   --font-frank-ruhl: var(--font-frank-ruhl), serif;
 }
 
 :root {
-  --background: #121212; /* charcoal black */
-  --foreground: #f5f5f5;
+  --background: #0A0807;
+  --foreground: #F5EBDC;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
   overflow-x: hidden;
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Premium scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
+/* Tabular numbers for prices / stats */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
-::-webkit-scrollbar-track {
-  background: #0a0a0a;
-}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #08060500; }
 ::-webkit-scrollbar-thumb {
-  background: #262626;
+  background: linear-gradient(180deg, #2A211B 0%, #14100D 100%);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #c19a6b;
+  background: linear-gradient(180deg, #B07A4A 0%, #8B5A2B 100%);
 }
 
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
+/* ─── Film grain overlay (used by <GrainOverlay/>) ─── */
+.grain-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.85 0 0 0 0 0.65 0 0 0 0 0.35 0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain-shift 8s steps(8) infinite;
+}
+
+@keyframes grain-shift {
+  0%, 100% { transform: translate(0, 0); }
+  10%      { transform: translate(-5%, -2%); }
+  20%      { transform: translate(3%, -4%); }
+  30%      { transform: translate(-3%, 4%); }
+  40%      { transform: translate(4%, 2%); }
+  50%      { transform: translate(-2%, -3%); }
+  60%      { transform: translate(2%, 3%); }
+  70%      { transform: translate(-4%, 1%); }
+  80%      { transform: translate(3%, -1%); }
+  90%      { transform: translate(-1%, 2%); }
+}
+
+/* ─── Vignette ─── */
+.vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 55;
+  background: radial-gradient(ellipse at center,
+    transparent 40%,
+    rgba(0,0,0,0.35) 90%,
+    rgba(0,0,0,0.6) 100%);
+}
+
+/* ─── Smoke drift (used in Hero background) ─── */
+@keyframes smoke-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.4; }
+  50%      { transform: translate3d(-3%, 2%, 0) scale(1.05); opacity: 0.55; }
+}
+.smoke-bg {
+  background:
+    radial-gradient(60% 50% at 20% 30%, rgba(184,115,51,0.18), transparent 60%),
+    radial-gradient(50% 40% at 80% 70%, rgba(176,122,74,0.14), transparent 60%),
+    radial-gradient(70% 60% at 50% 100%, rgba(0,0,0,0.7), transparent 70%);
+  animation: smoke-drift 14s ease-in-out infinite;
+}
+
+/* ─── Ken Burns slow pan/zoom on hero image ─── */
+@keyframes ken-burns {
+  0%   { transform: scale(1.05) translate(0, 0); }
+  50%  { transform: scale(1.12) translate(-1.5%, -1%); }
+  100% { transform: scale(1.05) translate(0, 0); }
+}
+.ken-burns { animation: ken-burns 22s ease-in-out infinite; }
+
+/* ─── Section clip-path reveal ─── */
+.clip-reveal {
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.clip-reveal.is-in { clip-path: inset(0 0 0 0); }
+
+/* ─── Letter shimmer for headings ─── */
+@keyframes shimmer-sweep {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.gold-shimmer {
+  background: linear-gradient(
+    90deg,
+    #B07A4A 0%,
+    #C9A961 25%,
+    #F5EBDC 50%,
+    #C9A961 75%,
+    #B07A4A 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-sweep 6s linear infinite;
+}
+
+/* ─── Underline grow on hover ─── */
+.underline-grow {
+  position: relative;
+}
+.underline-grow::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: -4px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.underline-grow:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* ─── Marquee ─── */
+@keyframes marquee-rtl {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(50%); }
+}
+.marquee-track {
+  animation: marquee-rtl 35s linear infinite;
+  will-change: transform;
+}
+
+/* ─── Soft glow utility ─── */
+.glow-bronze {
+  box-shadow:
+    0 0 0 1px rgba(176, 122, 74, 0.15),
+    0 10px 40px -10px rgba(176, 122, 74, 0.35),
+    0 4px 16px -8px rgba(0, 0, 0, 0.5);
+}
+
+/* ─── Cursor follower (desktop only) ─── */
+.cursor-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: #C9A961;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: difference;
+  transition: width 0.25s, height 0.25s, opacity 0.2s;
+  transform: translate(-50%, -50%);
+}
+.cursor-dot.is-hover {
+  width: 40px;
+  height: 40px;
+  background: rgba(201, 169, 97, 0.25);
+  border: 1px solid #C9A961;
+}
+@media (hover: none) { .cursor-dot { display: none; } }
+
+/* ─── Global focus ring (a11y) ─── */
+*:focus-visible {
+  outline: 2px solid #C9A961;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus-visible,
+a:focus-visible {
+  outline-offset: 3px;
+}
+
+/* Hide scrollbar on category tabs */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+/* ─── Reduced motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .ken-burns,
+  .smoke-bg,
+  .marquee-track,
+  .grain-layer,
+  .gold-shimmer {
+    animation: none !important;
+  }
 }
